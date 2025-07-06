@@ -1,5 +1,20 @@
 {
   "archinstall-language": "English",
+  "script": "test_script",
+  "app_config": {
+      "bluetooth_config": {
+          "enabled": true
+      },
+      "audio_config": {
+          "audio": "pipewire"
+      }
+  },
+  "auth_config": {
+      "u2f_config": {
+          "passwordless_sudo": true,
+          "u2f_login_method": "passwordless"
+      }
+  },
   "audio_config": {
     "audio": "pipewire"
   },

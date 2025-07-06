@@ -6,7 +6,8 @@ from pytest import MonkeyPatch
 from archinstall.default_profiles.profile import GreeterType
 from archinstall.lib.args import ArchConfig, ArchConfigHandler, Arguments
 from archinstall.lib.hardware import GfxDriver
-from archinstall.lib.models.audio_configuration import Audio, AudioConfiguration
+from archinstall.lib.models.application import ApplicationConfiguration, Audio, AudioConfiguration, BluetoothConfiguration
+from archinstall.lib.models.authentication import AuthenticationConfiguration, U2FLoginConfiguration, U2FLoginMethod
 from archinstall.lib.models.bootloader import Bootloader
 from archinstall.lib.models.device_model import DiskLayoutConfiguration, DiskLayoutType
 from archinstall.lib.models.locale import LocaleConfiguration
@@ -31,7 +32,7 @@ def test_default_args(monkeypatch: MonkeyPatch) -> None:
 		creds_decryption_key=None,
 		silent=False,
 		dry_run=False,
-		script='guided',
+		script=None,
 		mountpoint=Path('/mnt'),
 		skip_ntp=False,
 		skip_wkd=False,
@@ -127,6 +128,17 @@ def test_config_file_parsing(
 
 	assert arch_config == ArchConfig(
 		version='3.0.2',
+		script='test_script',
+		app_config=ApplicationConfiguration(
+			bluetooth_config=BluetoothConfiguration(enabled=True),
+			audio_config=AudioConfiguration(audio=Audio.PIPEWIRE),
+		),
+		auth_config=AuthenticationConfiguration(
+			u2f_config=U2FLoginConfiguration(
+				u2f_login_method=U2FLoginMethod.Passwordless,
+				passwordless_sudo=True,
+			),
+		),
 		locale_config=LocaleConfiguration(
 			kb_layout='us',
 			sys_lang='en_US',
@@ -195,7 +207,6 @@ def test_config_file_parsing(
 		),
 		bootloader=Bootloader.Systemd,
 		uki=False,
-		audio_config=AudioConfiguration(Audio.PIPEWIRE),
 		hostname='archy',
 		kernels=['linux-zen'],
 		ntp=True,
@@ -279,6 +290,27 @@ def test_deprecated_creds_config_parsing(
 			groups=['wheel'],
 		),
 	]
+
+
+def test_deprecated_audio_config_parsing(
+	monkeypatch: MonkeyPatch,
+	deprecated_audio_config: Path,
+) -> None:
+	monkeypatch.setattr(
+		'sys.argv',
+		[
+			'archinstall',
+			'--config',
+			str(deprecated_audio_config),
+		],
+	)
+
+	handler = ArchConfigHandler()
+	arch_config = handler.config
+
+	assert arch_config.app_config == ApplicationConfiguration(
+		audio_config=AudioConfiguration(audio=Audio.PIPEWIRE),
+	)
 
 
 def test_encrypted_creds_with_arg(
